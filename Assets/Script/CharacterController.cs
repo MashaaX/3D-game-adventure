@@ -4,123 +4,90 @@ using UnityEngine;
 
 public class CharacterController : MonoBehaviour
 {
+  public class MoveSettings
+  {
+    public static float fowardVel = 12;
+    public static float rotateVel = 100;
+    public static float jumpVel = 5;
+  }
 
-    [System.Serializable]
-    public class MoveSettings
+  public class InputSettings
+  {
+    public static float inputDelay = 0.1f;
+    public static string FOWARD_AXIS = "Vertical";
+    public static string TURN_AXIS = "Horizontal";
+    public static string JUMP_AXIS = "Jump";
+  }
+  Quaternion targetRotation;
+  Rigidbody rBody;
+
+  Vector3 velocity = Vector3.zero;
+
+  float fowardInput, turnInput, jumpInput;
+
+  public bool isOnGround = true;
+
+  public Quaternion TargetRotation
+  {
+    get { return targetRotation; }
+  }
+
+  private void Start()
+  {
+    targetRotation = transform.rotation;
+    rBody = GetComponent<Rigidbody>();
+  }
+
+  void Update()
+  {
+    GetInput();
+  }
+
+  void FixedUpdate()
+  {
+    Run();
+    Jump();
+    Turn();
+  }
+
+  void GetInput()
+  {
+    fowardInput = Input.GetAxis(InputSettings.FOWARD_AXIS);
+    turnInput = Input.GetAxis(InputSettings.TURN_AXIS);
+    jumpInput = Input.GetAxisRaw(InputSettings.JUMP_AXIS);
+  }
+
+  void Run()
+  {
+    velocity.y = rBody.velocity.y;
+    velocity.z = MoveSettings.fowardVel * fowardInput;
+    rBody.velocity = transform.TransformDirection(velocity);
+  }
+
+  void Jump()
+  {
+    if (jumpInput > 0 && isOnGround)
     {
-        public float fowardVel = 12;
-        public float rotateVel = 100;
-        public float jumpVel = 25;
-        public float distToGrounded = 0.1f;
-        public LayerMask ground;
+      rBody.AddForce(new Vector3(0, MoveSettings.jumpVel, 0), ForceMode.Impulse);
     }
+  }
 
-    [System.Serializable]
-    public class PhysSettings
+  void Turn()
+  {
+    if (Mathf.Abs(turnInput) > InputSettings.inputDelay)
     {
-        public float downAccel = 0.75f;
+      targetRotation *= Quaternion.AngleAxis(MoveSettings.rotateVel * turnInput * Time.deltaTime, Vector3.up);
     }
+    transform.rotation = targetRotation;
+  }
 
-    [System.Serializable]
-    public class InputSettings
-    {
-        public float inputDelay = 0.1f;
-        public string FOWARD_AXIS = "Vertical";
-        public string TURN_AXIS = "Horizontal";
-        public string JUMP_AXIS = "Jump";
-    }
+  void OnTriggerEnter(Collider other)
+  {
+    isOnGround = true;
+  }
 
-    public MoveSettings moveSetting = new MoveSettings();
-    public PhysSettings physSetting = new PhysSettings();
-    public InputSettings inputSetting = new InputSettings();
-
-    Vector3 velocity = Vector3.zero;
-    Quaternion targetRotation;
-    Rigidbody rBody;
-    float fowardInput, turnInput, jumpInput;
-
-    public Quaternion TargetRotation
-    {
-        get { return targetRotation; }
-    }
-
-    bool Grounded()
-    {
-        return Physics.Raycast(transform.position, Vector3.down, moveSetting.distToGrounded, moveSetting.ground);
-    }
-
-    private void Start()
-    {
-        targetRotation = transform.rotation;
-        if (GetComponent<Rigidbody>())
-            rBody = GetComponent<Rigidbody>();
-        else
-            Debug.LogError("The Character Needs a Rigidbody");
-
-        fowardInput = turnInput = jumpInput = 0;
-    }
-
-    void GetInput()
-    {
-        fowardInput = Input.GetAxis(inputSetting.FOWARD_AXIS); //interpolated
-        turnInput = Input.GetAxis(inputSetting.TURN_AXIS); //interpolated
-        jumpInput = Input.GetAxisRaw(inputSetting.JUMP_AXIS); //non=interpolated
-    }
-
-    void Update()
-    {
-        GetInput();
-        Turn();
-    }
-
-    void FixedUpdate()
-    {
-        Run();
-        Jump();
-
-        rBody.velocity = transform.TransformDirection(velocity);
-    }
-
-    void Run()
-    {
-        if (Mathf.Abs(fowardInput) > inputSetting.inputDelay)
-        {
-            //move
-            velocity.z = moveSetting.fowardVel * fowardInput;
-        }
-        else
-        {
-            //zero velocity
-            velocity.z = 0;
-        }
-
-    }
-
-    void Turn()
-    {
-        if (Mathf.Abs(turnInput) > inputSetting.inputDelay)
-        {
-            targetRotation *= Quaternion.AngleAxis(moveSetting.rotateVel * turnInput * Time.deltaTime, Vector3.up);
-        }
-        transform.rotation = targetRotation;
-    }
-
-    void Jump()
-    {
-        if(jumpInput > 0 && Grounded())
-        {
-            //jump
-            velocity.y = moveSetting.jumpVel;
-        }
-        else if (jumpInput == 0 && Grounded())
-        {
-            //zero out our velocity.y
-            velocity.y = 0;
-        }
-        else
-        {
-            //decrease velocity.y
-            velocity.y -= physSetting.downAccel;
-        }
-    }
+  void OnTriggerExit(Collider other)
+  {
+    isOnGround = false;
+  }
 }
