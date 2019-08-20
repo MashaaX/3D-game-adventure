@@ -4,18 +4,12 @@ using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour
 {
-    public float Health = 25f;
 
-    public void TakeDamage(float amnt)
+    private void OnTriggerEnter(Collider other)
     {
-        Health -= amnt;
-        if(Health <= 0)
+        if (other.CompareTag("Player") &&  other.gameObject.GetComponent<Animator>().GetCurrentAnimatorStateInfo(0).IsName("Attack"))
         {
-            print("Enemy Has Died!");
-        }
-        else
-        {
-            print("Enemy Took Some Damage");
+            Destroy(gameObject);
         }
     }
 }
