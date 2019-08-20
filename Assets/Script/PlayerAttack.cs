@@ -4,46 +4,45 @@ using UnityEngine;
 
 public class PlayerAttack : MonoBehaviour
 {
-    public Camera cam;
-    public GameObject Hand;
-    public Weapon myWeapon;
-    Animator handAnim;
+  Animator animator;
 
-    private float attackTimer;
-    
-    void Start()
+  void Start()
+  {
+    animator = GetComponent<Animator>();
+  }
+
+  void Update()
+  {
+
+    //Attack Animation
+    if (Input.GetMouseButtonDown(0))
     {
-        handAnim = Hand.GetComponent<Animator>();
-        myWeapon = Hand.GetComponentInChildren<Weapon>();
+      animator.SetTrigger("attack");
     }
+  }
 
-    void Update()
+  private bool isAttacking()
+  {
+    return animator.GetCurrentAnimatorStateInfo(0).IsName("Attack");
+  }
+
+  private void OnTriggerEnter(Collider other)
+  {
+    if (other.CompareTag("Enemy") && isAttacking())
     {
-        attackTimer += Time.deltaTime;
-        if (Input.GetMouseButton(0) && attackTimer >= myWeapon.attackCoolDown)
-        {
-            DoAttack();
-        }
-
-        //Attack Animation
-        if (Input.GetMouseButton(0))
-        {
-            handAnim.SetTrigger("attack");
-        }
+      Destroy(other.gameObject);
     }
+  }
 
-    private void DoAttack()
+  private void OnTriggerStay(Collider other)
+  {
+    if (other.CompareTag("Enemy") && isAttacking())
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if(Physics.Raycast(ray, out hit, myWeapon.attackRange))
-        {
-            if(hit.collider.tag == "Enemy")
-            {
-                EnemyHealth ehealth = hit.collider.GetComponent<EnemyHealth>();
-                ehealth.TakeDamage(myWeapon.attackDamage);
-            }
-        }
+      other.gameObject.transform.position = new Vector3(
+        Random.Range(5, 450),
+        0.84f,
+        Random.Range(5, 450)
+      );
     }
+  }
 }
